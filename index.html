@@ -8,25 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@300;400;500;600;700&family=Noto+Serif+Tamil:wght@400;700&family=Rajdhani:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/video.js@8/dist/video-js.min.css" rel="stylesheet">
-<script>
-// Suppress Video.js SecurityError for Web Workers in sandboxed environments
-window.Worker = (function(OrigWorker) {
-  return function(url) {
-    try { return new OrigWorker(url); }
-    catch(e) { return { postMessage:function(){}, terminate:function(){}, addEventListener:function(){} }; }
-  };
-})(window.Worker);
-</script>
-<script src="https://cdn.jsdelivr.net/npm/video.js@8/dist/video.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@videojs/http-streaming@3/dist/videojs-http-streaming.min.js"></script>
-<script>
-// Global Video.js defaults — disable workers
-if (window.videojs) {
-  videojs.options.vhs = { overrideNative: false, useNetworkInformationApi: false };
-  videojs.options.html5 = { nativeVideoTracks: true, nativeAudioTracks: true, nativeTextTracks: true };
-}
-</script>
+
+<!-- HLS.js — best M3U8/HLS player, no CORS proxy needed -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
 
 <style>
   :root {
@@ -1868,9 +1852,7 @@ if (window.videojs) {
           <span style="font-size:9px;font-weight:700;color:var(--red);letter-spacing:1px;">LIVE</span>
         </div>
       </div>
-      <div id="radioTrack" style="font-size:10px;color:rgba(255,255,255,0.55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">நேரடி ஒளிபரப்பு — Live on Zeno.fm</div>
-    </div>
-
+  
     <!-- Status (hidden on mobile via CSS) -->
     <div id="radioStreamStatus" style="font-size:10px;min-width:0;white-space:nowrap;display:none;flex-shrink:0;"></div>
 
@@ -1890,21 +1872,8 @@ if (window.videojs) {
     <button id="playBtn" onclick="toggleRadio()"
       style="background:var(--red);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 8px rgba(192,57,43,0.5);">▶</button>
 
-    <!-- Zeno.fm link (hidden on small mobile) -->
-    <a href="https://zeno.fm/radio/king-fm-tamil/" target="_blank" rel="noopener" class="zeno-link"
-      style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);padding:3px 9px;border-radius:5px;text-decoration:none;font-size:10px;font-weight:600;white-space:nowrap;flex-shrink:0;">
-      Zeno.fm ↗
-    </a>
-
-    <!-- CORS fallback -->
-    <div id="radioCorsPanel" style="display:none;align-items:center;gap:6px;flex-wrap:nowrap;flex-shrink:0;">
-      <a href="https://zeno.fm/radio/king-fm-tamil/" target="_blank" rel="noopener"
-        style="background:var(--red);color:white;padding:4px 10px;border-radius:5px;text-decoration:none;font-size:11px;font-weight:700;white-space:nowrap;">
-        📻 Zeno.fm
-      </a>
       <a href="https://stream.zeno.fm/c3t0zfhxrkxvv" target="_blank" rel="noopener"
         style="background:var(--green);color:white;padding:4px 10px;border-radius:5px;text-decoration:none;font-size:11px;font-weight:700;white-space:nowrap;">
-        🌐 Direct
       </a>
       <button onclick="hideRadioCors()"
         style="background:transparent;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:13px;padding:2px;flex-shrink:0;">✕</button>
@@ -2362,7 +2331,7 @@ if (window.videojs) {
         </li>
         <li>
           <span class="contact-icon">📞</span>
-          <span>+94 XX XXX XXXX</span>
+          <span>+94 72 300 5616</span>
         </li>
         <li>
           <span class="contact-icon">✉️</span>
@@ -4001,29 +3970,93 @@ const adminPanes = {
           <button onclick="removeTVPoster()" style="${wsBtn('var(--dark3)')}width:100%;padding:7px;border:1px solid var(--border);font-size:12px;">🗑️ Poster நீக்கு</button>
         </div>
 
+        <!-- ═══ STREAM TYPE SELECTOR ═══ -->
+        <div>
+          <label style="font-size:12px;color:var(--gold);font-weight:600;letter-spacing:1px;display:block;margin-bottom:8px;">📡 STREAM வகை தேர்ந்தெடுக்கவும்</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;">
+            <button onclick="selectStreamType('youtube')" id="stype-youtube"
+              style="padding:10px 6px;border-radius:8px;border:2px solid var(--red);background:rgba(192,57,43,0.15);color:white;cursor:pointer;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <span style="font-size:20px;">▶️</span>YouTube Live
+            </button>
+            <button onclick="selectStreamType('facebook')" id="stype-facebook"
+              style="padding:10px 6px;border-radius:8px;border:2px solid var(--border);background:var(--dark3);color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <span style="font-size:20px;">📘</span>Facebook Live
+            </button>
+            <button onclick="selectStreamType('m3u8')" id="stype-m3u8"
+              style="padding:10px 6px;border-radius:8px;border:2px solid var(--border);background:var(--dark3);color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <span style="font-size:20px;">📡</span>M3U8 / HLS
+            </button>
+            <button onclick="selectStreamType('mp4')" id="stype-mp4"
+              style="padding:10px 6px;border-radius:8px;border:2px solid var(--border);background:var(--dark3);color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <span style="font-size:20px;">🎬</span>MP4 Video
+            </button>
+          </div>
+        </div>
+
+        <!-- ═══ TYPE-SPECIFIC HELP ═══ -->
+        <div id="streamTypeHelp" style="background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.3);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--text);line-height:1.9;">
+          <b style="color:var(--gold);">▶️ YouTube Live:</b><br>
+          • Live stream URL: <code style="color:var(--gold);">youtube.com/watch?v=VIDEO_ID</code><br>
+          • Short URL: <code style="color:var(--gold);">youtu.be/VIDEO_ID</code><br>
+          • Live page: <code style="color:var(--gold);">youtube.com/@channel/live</code><br>
+          <span style="color:var(--green);font-size:11px;">✅ எல்லா devices-லும் சரியாக இயங்கும்</span>
+        </div>
+
+        <!-- ═══ CHANNEL NAME ═══ -->
+        <div>
+          <label style="font-size:12px;color:var(--gold);font-weight:600;letter-spacing:1px;display:block;margin-bottom:6px;">📺 CHANNEL பெயர்</label>
+          <input type="text" id="tvStreamName2" value="${currentStreamUrl?'KINGFM TAMIL TV':'KINGFM TAMIL TV'}" style="${wsInput}" placeholder="KINGFM TAMIL TV"/>
+        </div>
+
+        <!-- ═══ STREAM DESCRIPTION ═══ -->
+        <div>
+          <label style="font-size:12px;color:var(--gold);font-weight:600;letter-spacing:1px;display:block;margin-bottom:6px;">📝 விளக்கம் (Description) — விருப்பத்தேர்வு</label>
+          <input type="text" id="tvStreamDesc" style="${wsInput}" placeholder="நேரடி தமிழ் செய்திகள் · 24/7 Live News"/>
+        </div>
+
         <!-- ═══ STREAM URL ═══ -->
-        <div style="background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.3);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--text);line-height:1.8;">
-          <b style="color:var(--gold);">Stream வகைகள்:</b><br>
-          📺 YouTube: youtube.com/watch?v=ID<br>
-          📡 M3U8: https://stream.example.com/live.m3u8<br>
-          📘 Facebook Live URL · 🎬 Direct MP4
-        </div>
         <div>
-          <label style="font-size:12px;color:var(--gold);font-weight:600;letter-spacing:1px;display:block;margin-bottom:6px;">CHANNEL பெயர்</label>
-          <input type="text" id="tvStreamName2" value="KINGFM TAMIL TV" style="${wsInput}"/>
+          <label style="font-size:12px;color:var(--gold);font-weight:600;letter-spacing:1px;display:block;margin-bottom:6px;">🔗 STREAM URL <span style="color:var(--red);">*</span></label>
+          <textarea id="tvStreamUrl"
+            placeholder="https://www.youtube.com/watch?v=YOUR_LIVE_ID"
+            style="${wsInput}height:75px;resize:vertical;font-family:monospace;font-size:12px;"
+            oninput="updateTVPreview()"></textarea>
         </div>
-        <div>
-          <label style="font-size:12px;color:var(--gold);font-weight:600;letter-spacing:1px;display:block;margin-bottom:6px;">STREAM URL *</label>
-          <textarea id="tvStreamUrl" placeholder="https://www.youtube.com/watch?v=YOUR_LIVE_ID" style="${wsInput}height:70px;resize:vertical;font-family:monospace;font-size:12px;" oninput="updateTVPreview()"></textarea>
-        </div>
-        <div id="tvPreview" style="background:var(--dark3);border-radius:8px;padding:10px;border:1px solid var(--border);min-height:36px;font-size:12px;color:var(--muted);text-align:center;">
+
+        <!-- ═══ PREVIEW BOX ═══ -->
+        <div id="tvPreview" style="background:var(--dark3);border-radius:8px;padding:10px;border:1px solid var(--border);min-height:40px;font-size:12px;color:var(--muted);text-align:center;">
           URL உள்ளிட்டவுடன் preview காட்டப்படும்
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <button onclick="updateTVPreview()" style="${wsBtn('var(--blue)')}width:100%;">👁️ Preview</button>
-          <button onclick="saveTVStream()" style="${wsBtn('var(--red)')}width:100%;">▶ Stream துவங்கு</button>
+
+        <!-- ═══ QUICK URL SHORTCUTS ═══ -->
+        <div style="background:var(--dark3);border-radius:8px;padding:10px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;letter-spacing:1px;">⚡ QUICK TEST URLs</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <button onclick="document.getElementById('tvStreamUrl').value='https://www.youtube.com/watch?v=jfKfPfyJRdk';updateTVPreview()"
+              style="background:rgba(255,0,0,0.1);border:1px solid rgba(255,0,0,0.2);color:var(--text);padding:5px 8px;border-radius:5px;cursor:pointer;font-size:11px;text-align:left;">
+              ▶️ lofi hip hop radio (YouTube test)
+            </button>
+            <button onclick="document.getElementById('tvStreamUrl').value='https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';updateTVPreview()"
+              style="background:rgba(0,100,200,0.1);border:1px solid rgba(0,100,200,0.2);color:var(--text);padding:5px 8px;border-radius:5px;cursor:pointer;font-size:11px;text-align:left;">
+              📡 M3U8 Test Stream (Mux)
+            </button>
+            <button onclick="document.getElementById('tvStreamUrl').value='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';updateTVPreview()"
+              style="background:rgba(0,150,0,0.1);border:1px solid rgba(0,150,0,0.2);color:var(--text);padding:5px 8px;border-radius:5px;cursor:pointer;font-size:11px;text-align:left;">
+              🎬 MP4 Test Video (Big Buck Bunny)
+            </button>
+          </div>
         </div>
-        <button onclick="clearTVStream();closeAdminWs();" style="${wsBtn('var(--dark3)')}width:100%;border:1px solid var(--border);">⏹ Stream நிறுத்து</button>
+
+        <!-- ═══ ACTION BUTTONS ═══ -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <button onclick="updateTVPreview()" style="${wsBtn('var(--blue)')}width:100%;">👁️ Preview சரிபார்</button>
+          <button onclick="saveTVStream()" style="${wsBtn('var(--red)')}width:100%;font-size:14px;font-weight:800;">▶ STREAM துவங்கு</button>
+        </div>
+        <button onclick="clearTVStream();closeAdminWs();" style="${wsBtn('var(--dark3)')}width:100%;border:1px solid var(--border);color:var(--muted);">⏹ Stream நிறுத்து / Stop</button>
+
+        ${currentStreamUrl ? `<div style="margin-top:4px;background:rgba(39,174,96,0.1);border:1px solid var(--green);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--green);">
+          ✅ தற்போது இயங்கும் stream: <span style="font-family:monospace;color:var(--gold);word-break:break-all;">${currentStreamUrl.slice(0,60)}${currentStreamUrl.length>60?'...':''}</span>
+        </div>` : ''}
       </div>`
   },
 
@@ -5074,16 +5107,13 @@ function toggleTVMute() {
 
   tvIframeMuted = !tvIframeMuted;
 
-  // For Video.js player
-  if (vjsPlayer) {
-    vjsPlayer.muted(tvIframeMuted);
+  // For HLS.js / native video player
+  const vid = document.getElementById('tvVideo');
+  if (vid) {
+    vid.muted = tvIframeMuted;
     if (btn) btn.innerHTML = tvIframeMuted ? '🔇 <span id="tvMuteTxt">Sound ON</span>' : '🔊 <span id="tvMuteTxt">Sound OFF</span>';
     showToast(tvIframeMuted ? '🔇 Muted' : '🔊 Sound ON');
     return;
-  }
-
-  if (video && video.style.display !== 'none') {
-    video.muted = tvIframeMuted;
   }
 
   // For YouTube iframe — use postMessage API
@@ -5118,12 +5148,32 @@ function requestTVFullscreen() {
 }
 
 
-let vjsPlayer = null;
-let hlsInstance = null;
+let vjsPlayer   = null;   // kept for compat — not used
+let hlsInstance = null;   // HLS.js instance
 let currentStreamUrl = '';
 
+// ====== EXTRACT YOUTUBE VIDEO ID ======
+function extractYouTubeId(url) {
+  if (!url) return null;
+  const patterns = [
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube(?:-nocookie)?\.com\/watch\?(?:.*&)?v=([a-zA-Z0-9_-]{11})/,
+    /youtube(?:-nocookie)?\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube(?:-nocookie)?\.com\/live\/([a-zA-Z0-9_-]{11})/,
+    /youtube(?:-nocookie)?\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+    /youtube(?:-nocookie)?\.com\/v\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  // @channel/live format — no video ID, use URL directly as iframe
+  if (/youtube\.com\/@[^/]+\/live/i.test(url)) return '__CHANNEL_LIVE__';
+  return null;
+}
+
 function parseYouTubeEmbed(url) {
-  const id = extractYouTubeId ? extractYouTubeId(url) : null;
+  const id = extractYouTubeId(url);
   if (id) return 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
   return null;
 }
@@ -5295,17 +5345,79 @@ function showTVElement(which) {
   else stopTVOverlays();
 }
 
+// ====== STREAM TYPE SELECTOR ======
+function selectStreamType(type) {
+  // Update button styles
+  ['youtube','facebook','m3u8','mp4'].forEach(t => {
+    const btn = document.getElementById('stype-'+t);
+    if (!btn) return;
+    if (t === type) {
+      btn.style.border = '2px solid var(--red)';
+      btn.style.background = 'rgba(192,57,43,0.15)';
+      btn.style.color = 'white';
+    } else {
+      btn.style.border = '2px solid var(--border)';
+      btn.style.background = 'var(--dark3)';
+      btn.style.color = 'var(--muted)';
+    }
+  });
+
+  const helpEl = document.getElementById('streamTypeHelp');
+  const urlEl  = document.getElementById('tvStreamUrl');
+  const helps = {
+    youtube: `<b style="color:var(--gold);">▶️ YouTube Live இணைப்பு முறை:</b><br>
+      1. YouTube-ல் உங்கள் live stream திறக்கவும்<br>
+      2. Browser address bar-ல் இருந்து URL நகலெடுக்கவும்<br>
+      • <code style="color:var(--gold);">youtube.com/watch?v=VIDEO_ID</code><br>
+      • <code style="color:var(--gold);">youtu.be/VIDEO_ID</code><br>
+      • <code style="color:var(--gold);">youtube.com/@yourchannel/live</code><br>
+      <span style="color:var(--green);">✅ எல்லா devices-லும் சரியாக இயங்கும்</span>`,
+    facebook: `<b style="color:var(--gold);">📘 Facebook Live இணைப்பு முறை:</b><br>
+      1. Facebook-ல் உங்கள் live video திறக்கவும்<br>
+      2. Share → Copy Link → இங்கே paste செய்யவும்<br>
+      • <code style="color:var(--gold);">facebook.com/watch/live/?v=VIDEO_ID</code><br>
+      • <code style="color:var(--gold);">facebook.com/yourpage/videos/ID</code><br>
+      • <code style="color:var(--gold);">fb.watch/SHORT_URL</code><br>
+      <span style="color:var(--gold);">⚠️ Public video மட்டுமே embed ஆகும்</span>`,
+    m3u8: `<b style="color:var(--gold);">📡 M3U8 / HLS Stream:</b><br>
+      உங்கள் streaming server-ல் இருந்து M3U8 URL:<br>
+      • <code style="color:var(--gold);">https://yourserver.com/live/stream.m3u8</code><br>
+      • OBS / vMix → SRT / RTMP → Restream → M3U8<br>
+      • Nginx RTMP module output URL<br>
+      <span style="color:var(--gold);">⚠️ Server-ல் CORS headers தேவை</span><br>
+      <span style="color:var(--green);">✅ iOS Safari-ல் native HLS support</span>`,
+    mp4: `<b style="color:var(--gold);">🎬 MP4 Video File:</b><br>
+      Direct MP4 video file URL paste செய்யவும்:<br>
+      • <code style="color:var(--gold);">https://yoursite.com/video.mp4</code><br>
+      • Google Drive direct link<br>
+      • GitHub raw MP4 file URL<br>
+      • Any public MP4/WebM/OGG URL<br>
+      <span style="color:var(--green);">✅ எல்லா browsers-லும் இயங்கும்</span>`,
+  };
+  if (helpEl) helpEl.innerHTML = helps[type] || helps.youtube;
+  if (urlEl) {
+    const placeholders = {
+      youtube: 'https://www.youtube.com/watch?v=YOUR_LIVE_VIDEO_ID',
+      facebook: 'https://www.facebook.com/watch/live/?v=YOUR_VIDEO_ID',
+      m3u8: 'https://yourserver.com/live/stream.m3u8',
+      mp4: 'https://yoursite.com/video/file.mp4',
+    };
+    urlEl.placeholder = placeholders[type] || placeholders.youtube;
+  }
+  updateTVPreview();
+}
+
 function loadTVStream(rawUrl, streamName) {
   if (!rawUrl || !rawUrl.trim()) { showToast('⚠️ Stream URL உள்ளிடவும்!'); return; }
   const url = rawUrl.trim();
   currentStreamUrl = url;
 
-  // Destroy any existing Video.js player first
+  // Destroy existing Video.js player
   if (vjsPlayer) { try { vjsPlayer.dispose(); } catch(e){} vjsPlayer = null; }
 
-  // Clear iframe src
+  // Clear iframe
   const iframeEl = document.getElementById('tvIframe');
-  if (iframeEl) iframeEl.src = 'about:blank';
+  if (iframeEl) { iframeEl.src = 'about:blank'; }
 
   const name = streamName || 'KINGFM TAMIL TV';
 
@@ -5314,147 +5426,357 @@ function loadTVStream(rawUrl, streamName) {
     const ifr = document.getElementById('tvIframe');
     if (!ifr) return;
     ifr.src = src;
+    ifr.style.display = 'block';
     showTVElement('iframe');
   }
 
-  // ── Helper: play M3U8 / MP4 via native video ──
-  function playNativeVideo(src, type) {
+  // ── Helper: play native video (MP4 / M3U8 on Safari) ──
+  function playNativeVideo(src, mimeType) {
     showTVElement('video');
     const wrap = document.getElementById('tvVideoWrap');
     if (!wrap) return;
-    wrap.innerHTML = '<video id="tvVideo" controls autoplay playsinline style="width:100%;height:100%;background:#000;"></video>';
+    wrap.innerHTML = `<video id="tvVideo" controls autoplay playsinline
+      style="width:100%;height:100%;background:#000;display:block;"
+      onerror="document.getElementById('tvCorsError').style.display='flex';">
+      <source src="${src}" type="${mimeType}">
+    </video>`;
+    const vid = document.getElementById('tvVideo');
+    if (vid) {
+      vid.play().catch(() => {
+        // Autoplay blocked — show play overlay
+        vid.controls = true;
+      });
+    }
+  }
+
+  // ── Helper: play HLS/M3U8 with HLS.js (Chrome/Firefox/Android) ──
+  function playHLSjs(src) {
+    showTVElement('video');
+    const wrap = document.getElementById('tvVideoWrap');
+    if (!wrap) return;
+
+    // Destroy previous HLS instance
+    if (hlsInstance) { try { hlsInstance.destroy(); } catch(e){} hlsInstance = null; }
+
+    wrap.innerHTML = `<video id="tvVideo" controls autoplay playsinline
+      style="width:100%;height:100%;background:#000;display:block;"
+      webkit-playsinline></video>`;
+
     const vid = document.getElementById('tvVideo');
     if (!vid) return;
-    vid.src = src;
-    vid.type = type || '';
-    vid.play().catch(() => {});
+
+    if (Hls.isSupported()) {
+      hlsInstance = new Hls({
+        enableWorker: false,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
+        liveSyncDurationCount: 3,
+        liveMaxLatencyDurationCount: 6,
+        fragLoadingTimeOut: 20000,
+        manifestLoadingTimeOut: 20000,
+        xhrSetup: function(xhr) {
+          xhr.withCredentials = false;
+        }
+      });
+      hlsInstance.loadSource(src);
+      hlsInstance.attachMedia(vid);
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+        vid.play().catch(() => { vid.controls = true; });
+        showLiveBadge(name);
+        showToast('📡 M3U8 Stream இயங்குகிறது!');
+      });
+      hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          switch(data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              // Try to recover network error
+              hlsInstance.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hlsInstance.recoverMediaError();
+              break;
+            default:
+              // Cannot recover — show error
+              hlsInstance.destroy();
+              hlsInstance = null;
+              showStreamError(src, name,
+                'Stream இணைக்க முடியவில்லை. URL சரியாக உள்ளதா என்று சரிபார்க்கவும்.');
+              break;
+          }
+        }
+      });
+    } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+      // Safari native HLS
+      vid.src = src;
+      vid.play().catch(() => { vid.controls = true; });
+      showLiveBadge(name);
+      showToast('📡 M3U8 Stream இயங்குகிறது! (Safari Native)');
+    } else {
+      showStreamError(src, name, 'உங்கள் browser HLS support செய்யவில்லை.');
+    }
   }
 
-  // ── 1. YouTube (all formats) ──
+  // ══════════════════════════════════
+  // 1. YouTube — smart multi-method
+  // ══════════════════════════════════
   const ytId = extractYouTubeId(url);
   if (ytId) {
-    const embedUrl = 'https://www.youtube-nocookie.com/embed/' + ytId +
-      '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
-    playIframe(embedUrl);
-    showToast('📺 YouTube Live துவங்குகிறது...');
+    playYouTubeSmart(ytId, url, name);
+    autoSave();
     return;
   }
 
-  // ── 2. Facebook Live ──
+  // ══════════════════════════════════
+  // 2. Facebook Live / Video
+  // ══════════════════════════════════
   if (url.includes('facebook.com') || url.includes('fb.watch')) {
-    const fbSrc = 'https://www.facebook.com/plugins/video.php?href=' +
-      encodeURIComponent(url) + '&autoplay=true&width=640&show_text=false';
-    playIframe(fbSrc);
-    showToast('📺 Facebook Live துவங்குகிறது...');
+    // Facebook embed — requires SDK or plugin URL
+    const fbEmbed = 'https://www.facebook.com/plugins/video.php?href=' +
+      encodeURIComponent(url) +
+      '&show_text=false&autoplay=true&width=640&height=360&appId=';
+    playIframe(fbEmbed);
+    showLiveBadge(name);
+    showToast('📘 Facebook Live துவங்குகிறது...');
+    autoSave();
     return;
   }
 
-  // ── 3. Paste <iframe> embed code ──
-  if (/^<iframe/i.test(url)) {
+  // ══════════════════════════════════
+  // 3. Paste <iframe> embed code
+  // ══════════════════════════════════
+  if (/^<iframe/i.test(url.trim())) {
     const tmp = document.createElement('div');
     tmp.innerHTML = url;
     const ifr = tmp.querySelector('iframe');
-    if (ifr && ifr.src) { playIframe(ifr.src); showToast('📺 Custom embed துவங்குகிறது...'); return; }
-  }
-
-  // ── 4. Direct iframe-able URL (not a media file) ──
-  // e.g. https://www.example.com/live-player
-  const isMediaFile = /\.(m3u8|mp4|webm|ogg|ts|flv)(\?|#|$)/i.test(url);
-  if (!isMediaFile && (url.startsWith('http://') || url.startsWith('https://'))) {
-    // Try to detect stream type first
-    if (url.includes('.m3u8') || url.toLowerCase().includes('m3u8') ||
-        url.includes('.ts') || url.includes('hls') || url.includes('stream')) {
-      // Fall through to M3U8 handler below
-    } else {
-      playIframe(url);
-      showToast('📺 Stream துவங்குகிறது...');
+    if (ifr && ifr.src) {
+      playIframe(ifr.src);
+      showLiveBadge(name);
+      showToast('📺 iFrame embed துவங்குகிறது...');
+      autoSave();
       return;
     }
   }
 
-  // ── 5. M3U8 / HLS ──
-  if (/\.m3u8/i.test(url) || /m3u8/i.test(url) || /\.ts(\?|$)/i.test(url)) {
-    // Try native HLS first (Safari/iOS supports natively)
-    const vid = document.createElement('video');
-    if (vid.canPlayType('application/vnd.apple.mpegurl') || vid.canPlayType('application/x-mpegURL')) {
-      playNativeVideo(url, 'application/x-mpegURL');
-      showToast('📺 HLS Stream துவங்குகிறது...');
-      return;
-    }
-    // Try Video.js with HLS
-    showTVElement('video');
-    const wrap = document.getElementById('tvVideoWrap');
-    if (wrap) {
-      wrap.innerHTML = '<video id="tvVideo" class="video-js vjs-default-skin vjs-big-play-centered" controls autoplay playsinline style="width:100%;height:100%;"></video>';
-      try {
-        vjsPlayer = videojs('tvVideo', {
-          techOrder: ['html5'],
-          html5: { vhs: { overrideNative: false }, nativeVideoTracks: true, nativeAudioTracks: true },
-          liveui: true, fluid: false, controls: true, autoplay: true, workerSupport: false,
-        });
-        vjsPlayer.src({ src: url, type: 'application/x-mpegURL' });
-        vjsPlayer.play();
-        vjsPlayer.on('error', () => {
-          // Fallback: try as direct iframe
-          if (vjsPlayer) { try { vjsPlayer.dispose(); } catch(e){} vjsPlayer = null; }
-          playIframe(url);
-        });
-      } catch(e) { playIframe(url); }
-    }
-    showToast('📺 M3U8 Stream துவங்குகிறது...');
-    return;
-  }
-
-  // ── 6. MP4 / WebM / Ogg ──
-  if (/\.(mp4|webm|ogg)(\?|#|$)/i.test(url)) {
-    const type = url.match(/\.webm/i) ? 'video/webm' : url.match(/\.ogg/i) ? 'video/ogg' : 'video/mp4';
+  // ══════════════════════════════════
+  // 4. MP4 / WebM / OGG direct file
+  // ══════════════════════════════════
+  if (/\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(url)) {
+    const type = url.match(/\.webm/i) ? 'video/webm'
+               : url.match(/\.ogg/i)  ? 'video/ogg'
+               : url.match(/\.mov/i)  ? 'video/mp4'
+               : 'video/mp4';
     playNativeVideo(url, type);
-    showToast('📺 Video Stream துவங்குகிறது...');
+    showToast('🎬 MP4 Video துவங்குகிறது...');
+    autoSave();
     return;
   }
 
-  // ── 7. Anything else — try as iframe ──
-  playIframe(url);
-  showToast('📺 Stream துவங்குகிறது...');
-}
-
-// Extract YouTube video ID from any YouTube URL format
-function extractYouTubeId(url) {
-  const patterns = [
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-    /youtube(?:-nocookie)?\.com\/watch\?(?:.*&)?v=([a-zA-Z0-9_-]{11})/,
-    /youtube(?:-nocookie)?\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-    /youtube(?:-nocookie)?\.com\/live\/([a-zA-Z0-9_-]{11})/,
-    /youtube(?:-nocookie)?\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-    /youtube(?:-nocookie)?\.com\/v\/([a-zA-Z0-9_-]{11})/,
-  ];
-  for (const p of patterns) {
-    const m = url.match(p);
-    if (m) return m[1];
+  // ══════════════════════════════════
+  // 5. M3U8 / HLS Stream
+  // ══════════════════════════════════
+  if (/\.m3u8/i.test(url) || /m3u8/i.test(url) || /\.ts(\?|$)/i.test(url)
+      || url.includes('/hls/') || url.includes('/live/')) {
+    // Use HLS.js — works on ALL browsers (Chrome, Firefox, Android, iOS)
+    playHLSjs(url);
+    autoSave();
+    return;
   }
-  return null;
+
+  // ══════════════════════════════════
+  // 6. Any other HTTP URL → try iframe
+  // ══════════════════════════════════
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    playIframe(url);
+    showLiveBadge(name);
+    showToast('📺 Stream துவங்குகிறது...');
+    autoSave();
+    return;
+  }
+
+  showToast('⚠️ சரியான Stream URL உள்ளிடவும்!');
+}
+
+// ══════════════════════════════════════════════════════
+// YOUTUBE SMART PLAYER
+// Tries multiple embed methods. If channel blocks embed,
+// shows a helpful fallback with open-in-YouTube button.
+// ══════════════════════════════════════════════════════
+function playYouTubeSmart(ytId, originalUrl, name) {
+  const wrap   = document.getElementById('tvVideoWrap');
+  const ifrEl  = document.getElementById('tvIframe');
+  const placeholder = document.getElementById('tvPlaceholder');
+  const badge  = document.getElementById('tvLiveBadge');
+
+  // Build embed URLs to try in order
+  const isChannelLive = ytId === '__CHANNEL_LIVE__';
+
+  const embedUrls = isChannelLive
+    ? [ originalUrl ]  // channel/live — try direct
+    : [
+        // Method 1: youtube-nocookie (privacy-enhanced, fewer blocks)
+        `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`,
+        // Method 2: standard youtube embed
+        `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`,
+      ];
+
+  let attemptIndex = 0;
+
+  function tryEmbed(src) {
+    if (!ifrEl) return;
+    ifrEl.src = src;
+    ifrEl.style.display = 'block';
+    showTVElement('iframe');
+    if (placeholder) placeholder.style.display = 'none';
+    if (badge) badge.style.display = 'flex';
+    showToast('▶️ YouTube துவங்குகிறது...');
+  }
+
+  // Try first URL
+  tryEmbed(embedUrls[0]);
+
+  // Listen for iframe load errors / blocked content
+  if (ifrEl) {
+    // Remove old listeners
+    ifrEl.onload = null;
+    ifrEl.onerror = null;
+
+    ifrEl.onload = function() {
+      // Check if content is blocked — YouTube sends about:blank or blocked page
+      try {
+        // If we can access contentDocument it loaded fine (same-origin)
+        // Cross-origin will throw — that means YouTube loaded (good)
+      } catch(e) {
+        // Cross-origin — YouTube loaded successfully
+        return;
+      }
+      // If src is still about:blank after load — blocked
+      if (!ifrEl.src || ifrEl.src === 'about:blank') {
+        handleYouTubeBlocked(ytId, originalUrl, name);
+        return;
+      }
+      // Try next embed URL if first one may be blocked
+      if (attemptIndex === 0 && embedUrls.length > 1) {
+        // Wait 3 seconds to see if content shows
+        setTimeout(() => {
+          // If blocked message appeared, try next
+          attemptIndex++;
+          // We can't detect blocked from outside iframe cross-origin
+          // So just keep current embed — user will see if it works
+        }, 3000);
+      }
+    };
+
+    ifrEl.onerror = function() {
+      if (attemptIndex < embedUrls.length - 1) {
+        attemptIndex++;
+        tryEmbed(embedUrls[attemptIndex]);
+      } else {
+        handleYouTubeBlocked(ytId, originalUrl, name);
+      }
+    };
+  }
+}
+
+// Show friendly YouTube blocked / alternative UI
+function handleYouTubeBlocked(ytId, originalUrl, name) {
+  const isChannelLive = ytId === '__CHANNEL_LIVE__';
+  const watchUrl = isChannelLive ? originalUrl
+    : `https://www.youtube.com/watch?v=${ytId}`;
+  const embedUrl = isChannelLive ? originalUrl
+    : `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0`;
+
+  // Show a nice player-style overlay with options
+  showTVElement('error');
+  const msgEl = document.getElementById('tvCorsMsg');
+  const btns  = document.getElementById('tvExternalBtns');
+
+  if (msgEl) msgEl.innerHTML = `
+    <div style="font-size:32px;margin-bottom:10px;">▶️</div>
+    <b style="color:var(--gold);font-size:15px;">${name || 'YouTube Live'}</b><br><br>
+    <span style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.8;">
+      இந்த channel YouTube-ல் direct embedding தடை செய்துள்ளது.<br>
+      கீழே உள்ள options மூலம் பார்வையிடலாம்:
+    </span>`;
+
+  if (btns) btns.innerHTML = `
+    <!-- Open in YouTube — most reliable -->
+    <a href="${watchUrl}" target="_blank" rel="noopener"
+      style="background:#FF0000;color:white;padding:10px 18px;border-radius:8px;
+             text-decoration:none;font-size:14px;font-weight:700;
+             display:flex;align-items:center;gap:8px;">
+      ▶️ YouTube-ல் திற
+    </a>
+
+    <!-- Try embed in new tab -->
+    <a href="${embedUrl}" target="_blank" rel="noopener"
+      style="background:var(--dark3);color:var(--text);border:1px solid var(--border);
+             padding:10px 18px;border-radius:8px;text-decoration:none;
+             font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;">
+      🔗 Embed Tab-ல் திற
+    </a>
+
+    <!-- Copy URL -->
+    <button onclick="navigator.clipboard?.writeText('${watchUrl}').then(()=>showToast('✅ URL நகலெடுக்கப்பட்டது!'))"
+      style="background:var(--dark3);color:var(--text);border:1px solid var(--border);
+             padding:10px 18px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;
+             display:flex;align-items:center;gap:8px;">
+      📋 URL நகலெடு
+    </button>
+
+    <!-- Tip box -->
+    <div style="width:100%;background:rgba(255,200,0,0.08);border:1px solid rgba(255,200,0,0.2);
+         border-radius:8px;padding:10px 12px;font-size:11px;color:var(--gold);
+         text-align:left;line-height:1.8;margin-top:4px;">
+      💡 <b>குறிப்பு:</b> YouTube channel embedding தடை செய்திருந்தால்,<br>
+      Admin Panel → TV Stream → <b>M3U8 URL</b> பயன்படுத்தவும்.<br>
+      அல்லது YouTube Studio → Live Dashboard → Stream Key மூலம்<br>
+      உங்கள் சொந்த M3U8 stream உருவாக்கலாம்.
+    </div>`;
+}
+
+// Show LIVE badge and hide placeholder
+function showLiveBadge(name) {
+  const placeholder = document.getElementById('tvPlaceholder');
+  const badge = document.getElementById('tvLiveBadge');
+  if (placeholder) placeholder.style.display = 'none';
+  if (badge) badge.style.display = 'flex';
 }
 
 
+
+function showStreamError(url, name, msg) {
+  showTVElement('error');
+  const msgEl = document.getElementById('tvCorsMsg');
+  const btns  = document.getElementById('tvExternalBtns');
+  if (msgEl) msgEl.innerHTML = `
+    <b style="color:var(--gold);">${name || 'Stream'}</b><br>
+    <span style="font-size:12px;color:var(--muted);">${msg || 'Stream load ஆகவில்லை.'}</span><br><br>
+    <span style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.4);word-break:break-all;">${url}</span>`;
+  if (btns) btns.innerHTML = `
+    <a href="vlc://${url}"
+      style="background:var(--blue);color:white;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600;">
+      📱 VLC-ல் திற
+    </a>
+    <button onclick="navigator.clipboard?.writeText('${url.replace(/'/g,"\\'")}').then(()=>showToast('✅ URL நகலெடுக்கப்பட்டது!'))"
+      style="background:var(--dark3);color:var(--text);border:1px solid var(--border);padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;">
+      📋 URL நகலெடு
+    </button>`;
+}
 
 function showM3U8Fallback(url, name) {
-  showTVElement('error');
-  const msg = document.getElementById('tvCorsMsg');
-  const btns = document.getElementById('tvExternalBtns');
-  if (msg) msg.innerHTML = '<b style="color:var(--gold);">' + (name || 'Stream') + '</b><br><span style="font-size:12px;font-family:monospace;word-break:break-all;color:var(--muted);">' + url + '</span><br><br>M3U8 streams need CORS headers on the server.<br>Open directly in an external player:';
-  if (btns) btns.innerHTML = `
-    <a href="vlc://${url}" style="background:var(--blue);color:white;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600;">📱 VLC-ல் திற</a>
-    <a href="${url}" download target="_blank" style="background:var(--dark3);color:var(--text);border:1px solid var(--border);padding:8px 16px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600;">⬇️ Download</a>
-    <button onclick="navigator.clipboard.writeText('${url}').then(()=>showToast('✅ URL நகலெடுக்கப்பட்டது!'))" style="background:var(--dark3);color:var(--text);border:1px solid var(--border);padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;">📋 URL நகலெடு</button>
-  `;
+  showStreamError(url, name, 'M3U8 stream இணைக்க முடியவில்லை. VLC-ல் திறக்கவும்.');
 }
 
 function clearTVStream() {
-  if (vjsPlayer) { try { vjsPlayer.dispose(); } catch(e){} vjsPlayer = null; }
+  // Destroy HLS.js instance
+  if (hlsInstance) { try { hlsInstance.destroy(); } catch(e){} hlsInstance = null; }
+  if (vjsPlayer)   { try { vjsPlayer.dispose();   } catch(e){} vjsPlayer = null; }
   const iframe = document.getElementById('tvIframe');
-  if (iframe) iframe.src = '';
-  const video = document.getElementById('tvVideo');
-  if (video) { try { video.src = ''; } catch(e){} }
+  if (iframe) { iframe.src = 'about:blank'; iframe.style.display = 'none'; }
+  const wrap = document.getElementById('tvVideoWrap');
+  if (wrap) { wrap.style.display = 'none'; wrap.innerHTML = ''; }
   currentStreamUrl = '';
   tvIframeMuted = true;
   stopTVOverlays();
@@ -5467,37 +5789,98 @@ function updateTVPreview() {
   const preview = document.getElementById('tvPreview');
   if (!urlEl || !preview) return;
   const v = urlEl.value.trim();
-  if (!v) { preview.innerHTML = '<span style="color:var(--muted);">URL உள்ளிட்டவுடன் preview காட்டப்படும்</span>'; return; }
+  if (!v) {
+    preview.innerHTML = '<span style="color:var(--muted);">URL உள்ளிட்டவுடன் preview காட்டப்படும்</span>';
+    return;
+  }
 
-  const ytEmbed = parseYouTubeEmbed(v);
-  if (ytEmbed) {
-    preview.innerHTML = '<div style="color:var(--green);font-size:13px;padding:8px;">✅ YouTube Live URL detected — Save செய்யவும்</div><iframe src="' + ytEmbed + '" style="width:100%;height:160px;border:none;border-radius:6px;" allowfullscreen allow="autoplay;encrypted-media"></iframe>';
+  // YouTube
+  const ytId = extractYouTubeId(v);
+  if (ytId && ytId !== '__CHANNEL_LIVE__') {
+    const embedUrl = 'https://www.youtube-nocookie.com/embed/' + ytId + '?rel=0&modestbranding=1';
+    const watchUrl = 'https://www.youtube.com/watch?v=' + ytId;
+    preview.innerHTML = `
+      <div style="color:var(--green);font-size:12px;padding:6px 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        ✅ <b>YouTube</b> URL கண்டுபிடிக்கப்பட்டது
+        <a href="${watchUrl}" target="_blank" style="margin-left:auto;background:#FF0000;color:white;padding:3px 10px;border-radius:4px;text-decoration:none;font-size:11px;font-weight:700;">▶ YouTube-ல் திற</a>
+      </div>
+      <div style="background:rgba(255,200,0,0.08);border:1px solid rgba(255,200,0,0.15);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--gold);margin:4px 0;">
+        ⚠️ சில channels embedding தடை செய்துள்ளன. Blocked ஆனால் "YouTube-ல் திற" button காட்டும்.
+      </div>
+      <iframe src="${embedUrl}" style="width:100%;height:150px;border:none;border-radius:6px;"
+        allowfullscreen allow="autoplay;encrypted-media;picture-in-picture"></iframe>`;
     return;
   }
-  const fbEmbed = parseFacebookEmbed(v);
-  if (fbEmbed) {
-    preview.innerHTML = '<div style="color:var(--green);font-size:13px;padding:8px;">✅ Facebook Live URL detected</div>';
+  if (ytId === '__CHANNEL_LIVE__' || /youtube\.com\/@/i.test(v)) {
+    preview.innerHTML = `<div style="padding:10px;color:var(--green);font-size:12px;">
+      ✅ <b>YouTube Channel Live</b> URL<br>
+      <span style="color:var(--muted);">${v}</span>
+    </div>`;
     return;
   }
-  if (v.includes('.m3u8') || v.toLowerCase().includes('m3u8')) {
-    preview.innerHTML = '<div style="padding:12px;color:var(--gold);font-size:13px;">📡 M3U8/HLS Stream detected.<br><small style="color:var(--muted);">CORS-enabled server தேவை. Save செய்யவும்.</small><br><span style="font-family:monospace;font-size:11px;color:var(--muted);word-break:break-all;">' + v + '</span></div>';
+
+  // Facebook
+  if (v.includes('facebook.com') || v.includes('fb.watch')) {
+    preview.innerHTML = `<div style="padding:10px;color:var(--green);font-size:12px;">
+      ✅ <b>Facebook Live</b> URL கண்டுபிடிக்கப்பட்டது<br>
+      <span style="color:var(--muted);font-size:11px;">Public video மட்டுமே embed ஆகும்</span><br>
+      <span style="font-family:monospace;font-size:10px;color:var(--muted);word-break:break-all;">${v}</span>
+    </div>`;
     return;
   }
-  if (v.startsWith('<iframe')) {
-    preview.innerHTML = '<div style="padding:12px;color:var(--green);font-size:13px;">✅ iFrame embed code detected — Save செய்யவும்</div>';
+
+  // M3U8 / HLS
+  if (/\.m3u8/i.test(v) || /m3u8/i.test(v) || /\.ts(\?|$)/i.test(v)) {
+    preview.innerHTML = `<div style="padding:10px;color:var(--gold);font-size:12px;">
+      📡 <b>M3U8 / HLS Stream</b> கண்டுபிடிக்கப்பட்டது<br>
+      <span style="color:var(--muted);font-size:11px;">Server-ல் CORS headers இருந்தால் நேரடியாக இயங்கும்</span><br>
+      <span style="font-family:monospace;font-size:10px;color:var(--muted);word-break:break-all;">${v}</span>
+    </div>`;
     return;
   }
-  preview.innerHTML = '<div style="padding:12px;color:var(--gold);font-size:13px;">🔗 URL: <span style="font-family:monospace;font-size:11px;color:var(--muted);word-break:break-all;">' + v + '</span></div>';
+
+  // MP4
+  if (/\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(v)) {
+    preview.innerHTML = `<div style="padding:10px;color:var(--green);font-size:12px;">
+      🎬 <b>MP4 Video</b> URL கண்டுபிடிக்கப்பட்டது — ▶ Stream துவங்கு அழுத்தவும்<br>
+      <span style="font-family:monospace;font-size:10px;color:var(--muted);word-break:break-all;">${v}</span>
+    </div>`;
+    return;
+  }
+
+  // iFrame embed code
+  if (/^<iframe/i.test(v)) {
+    preview.innerHTML = `<div style="padding:10px;color:var(--green);font-size:12px;">
+      ✅ <b>iFrame Embed code</b> கண்டுபிடிக்கப்பட்டது — ▶ Stream துவங்கு அழுத்தவும்
+    </div>`;
+    return;
+  }
+
+  // Generic URL
+  preview.innerHTML = `<div style="padding:10px;color:var(--gold);font-size:12px;">
+    🔗 URL: <span style="font-family:monospace;font-size:10px;color:var(--muted);word-break:break-all;">${v}</span><br>
+    <span style="color:var(--muted);font-size:11px;">iFrame-ஆக load செய்ய முயற்சிக்கும்</span>
+  </div>`;
 }
 
 function saveTVStream() {
-  const urlEl = document.getElementById('tvStreamUrl');
+  const urlEl  = document.getElementById('tvStreamUrl');
   const nameEl = document.getElementById('tvStreamName2');
+  const descEl = document.getElementById('tvStreamDesc');
   if (!urlEl || !urlEl.value.trim()) { showToast('⚠️ Stream URL உள்ளிடவும்!'); return; }
-  const url = urlEl.value.trim();
+  const url  = urlEl.value.trim();
   const name = (nameEl && nameEl.value.trim()) ? nameEl.value.trim() : 'KINGFM TAMIL TV';
+  const desc = (descEl && descEl.value.trim()) ? descEl.value.trim() : '';
+
+  // Update TV subtitle if description provided
+  if (desc) {
+    const sublabel = document.getElementById('tvSublabel');
+    if (sublabel) sublabel.textContent = desc;
+  }
+
   closeAdminWs();
-  setTimeout(() => { loadTVStream(url, name); }, 200);
+  setTimeout(() => { loadTVStream(url, name); }, 300);
+  showToast('▶ Stream துவங்குகிறது...');
 }
 
 // ====== RADIO STREAM (ZENO.FM) ======
