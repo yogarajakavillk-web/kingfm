@@ -1852,7 +1852,9 @@
           <span style="font-size:9px;font-weight:700;color:var(--red);letter-spacing:1px;">LIVE</span>
         </div>
       </div>
-  
+      <div id="radioTrack" style="font-size:10px;color:rgba(255,255,255,0.55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">நேரடி ஒளிபரப்பு — Live on Zeno.fm</div>
+    </div>
+
     <!-- Status (hidden on mobile via CSS) -->
     <div id="radioStreamStatus" style="font-size:10px;min-width:0;white-space:nowrap;display:none;flex-shrink:0;"></div>
 
@@ -1872,8 +1874,21 @@
     <button id="playBtn" onclick="toggleRadio()"
       style="background:var(--red);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 8px rgba(192,57,43,0.5);">▶</button>
 
+    <!-- Zeno.fm link (hidden on small mobile) -->
+    <a href="https://zeno.fm/radio/king-fm-tamil/" target="_blank" rel="noopener" class="zeno-link"
+      style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);padding:3px 9px;border-radius:5px;text-decoration:none;font-size:10px;font-weight:600;white-space:nowrap;flex-shrink:0;">
+      Zeno.fm ↗
+    </a>
+
+    <!-- CORS fallback -->
+    <div id="radioCorsPanel" style="display:none;align-items:center;gap:6px;flex-wrap:nowrap;flex-shrink:0;">
+      <a href="https://zeno.fm/radio/king-fm-tamil/" target="_blank" rel="noopener"
+        style="background:var(--red);color:white;padding:4px 10px;border-radius:5px;text-decoration:none;font-size:11px;font-weight:700;white-space:nowrap;">
+        📻 Zeno.fm
+      </a>
       <a href="https://stream.zeno.fm/c3t0zfhxrkxvv" target="_blank" rel="noopener"
         style="background:var(--green);color:white;padding:4px 10px;border-radius:5px;text-decoration:none;font-size:11px;font-weight:700;white-space:nowrap;">
+        🌐 Direct
       </a>
       <button onclick="hideRadioCors()"
         style="background:transparent;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:13px;padding:2px;flex-shrink:0;">✕</button>
@@ -2331,7 +2346,7 @@
         </li>
         <li>
           <span class="contact-icon">📞</span>
-          <span>+94 72 300 5616</span>
+          <span>+94 XX XXX XXXX</span>
         </li>
         <li>
           <span class="contact-icon">✉️</span>
